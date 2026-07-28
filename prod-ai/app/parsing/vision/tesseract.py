@@ -1,54 +1,44 @@
-from pathlib import Path
+from __future__ import annotations
+
 import time
 
 import pytesseract
-
-from pdf2image import convert_from_path
+from PIL import Image
 
 from app.parsing.vision.base import BaseVisionProvider
-from app.parsing.vision.models import (
-    OCRPage,
-    OCRResult,
-)
+from app.parsing.vision.models import OCRPage, OCRResult
 
-config = (
-    "--oem 3 "
-    "--psm 6"
-)
 
-class TesseractVisionProvider(
-    BaseVisionProvider
-):
+class TesseractVisionProvider(BaseVisionProvider):
 
-    def extract(
+    def extract_images(
         self,
-        file: Path,
+        images: list[Image.Image],
     ) -> OCRResult:
 
         start = time.perf_counter()
 
-        images = convert_from_path(file)
+        pages: list[OCRPage] = []
 
-        pages = []
+        config = "--oem 3 --psm 6"
 
-        for i, image in enumerate(images):
+        for index, image in enumerate(images):
 
             text = pytesseract.image_to_string(
                 image,
-                lang="eng + hin",
-                config=config
+                lang="eng",
+                config=config,
             )
 
             pages.append(
                 OCRPage(
-                    page_number=i + 1,
+                    page_number=index + 1,
                     text=text,
                 )
             )
 
         elapsed = int(
-            (time.perf_counter() - start)
-            * 1000
+            (time.perf_counter() - start) * 1000
         )
 
         return OCRResult(
@@ -56,3 +46,5 @@ class TesseractVisionProvider(
             duration_ms=elapsed,
             pages=pages,
         )
+        
+        
